@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConQuyLuoi</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3efff; margin: 0; }
+    header { background: linear-gradient(135deg, #b39ddb, #9575cd); color: white; padding: 25px; text-align: center; }
+    .container { max-width: 1000px; margin: 30px auto; padding: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card { background: #ffffff; border-radius: 14px; padding: 20px; box-shadow: 0 6px 15px rgba(149,117,205,0.25); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #5e35b1; }
+    label { margin-top: 15px; display: block; font-weight: bold; color: #333; }
+    input, select { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+    button { padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; }
+    .primary-btn { background: #2ecc71; color: white; }
+    .primary-btn:hover { background: #27ae60; }
+    .secondary-btn { background: #3498db; color: white; }
+    .secondary-btn:hover { background: #2980b9; }
+    .danger-btn { background: #e74c3c; color: white; }
+    .danger-btn:hover { background: #c0392b; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+    th { background: #d1c4e9; color: #333; }
+    .stats { display: flex; justify-content: space-around; text-align: center; margin-top: 15px; }
+    .stats div { background: #ede7f6; padding: 20px; border-radius: 10px; flex: 1; margin: 5px; }
+    .stats h3 { margin: 0; font-size: 24px; color: #5e35b1; }
+    .stats p { margin: 5px 0 0 0; color: #666; }
+    #authMsg { color: #e74c3c; margin-top: 10px; font-weight: bold; }
+    #bmiText { color: #5e35b1; font-weight: bold; margin-top: 10px; }
+    #smartTip { color: #e67e22; font-weight: bold; margin-top: 10px; }
+    #goalText { color: #2ecc71; font-weight: bold; margin-top: 10px; }
+    #logoutBtn { background: #e74c3c; color: white; padding: 8px 16px; border-radius: 4px; }
+    #logoutBtn:hover { background: #c0392b; }
+    @media (max-width: 600px) { 
+      header h1 { font-size: 22px; } 
+      .stats { flex-direction: column; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🦥 ConQuyLuoi - Theo dõi thể dục</h1>
+  <p>Theo dõi – Thống kê – Mục tiêu luyện tập</p>
+  <button onclick="logout()" id="logoutBtn" style="display:none;margin-top:10px">Đăng xuất</button>
+</header>
+
+<div class="container">
+  <!-- LOGIN / REGISTER -->
+  <div class="card" id="authBox">
+    <h2>🔐 Đăng nhập / Đăng ký</h2>
+    <label>Email</label>
+    <input type="email" id="authEmail" placeholder="Nhập email">
+    <label>Mật khẩu</label>
+    <input type="password" id="authPass" placeholder="Nhập mật khẩu">
+    <button class="primary-btn" onclick="login()">Đăng nhập</button>
+    <button class="secondary-btn" onclick="register()">Đăng ký</button>
+    <p id="authMsg"></p>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="card">
+      <h2>👤 Hồ sơ người dùng</h2>
+      <label>Tuổi</label>
+      <input type="number" id="age" min="1" max="120" placeholder="Nhập tuổi">
+      <label>Cân nặng (kg)</label>
+      <input type="number" id="weight" min="1" max="300" step="0.1" placeholder="Nhập cân nặng">
+      <label>Chiều cao (cm)</label>
+      <input type="number" id="height" min="50" max="250" placeholder="Nhập chiều cao">
+      <button class="primary-btn" onclick="saveProfile()">Lưu hồ sơ</button>
+      <p id="bmiText"></p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>➕ Thêm hoạt động</h2>
+        <label>Tên bài tập</label>
+        <input id="exercise" placeholder="Ví dụ: Chạy bộ, Hít đất...">
+        <label>Loại bài tập</label>
+        <select id="type" onchange="previewCalories()">
+          <option value="Cardio">Cardio</option>
+          <option value="Strength">Strength</option>
+          <option value="Yoga">Yoga</option>
+        </select>
+        <label>Thời gian (phút)</label>
+        <input type="number" id="duration" min="1" max="480" oninput="previewCalories()" placeholder="Nhập số phút">
+        <label>Calo ước tính</label>
+        <input type="number" id="calories" readonly>
+        <button class="primary-btn" onclick="addActivity()">Thêm hoạt động</button>
+      </div>
+
+      <div class="card">
+        <h2>🏆 Streak & Huy hiệu</h2>
+        <p>🔥 Chuỗi ngày tập liên tiếp: <b id="streak">0</b> ngày</p>
+        <p>🎖️ Huy hiệu: <span id="badge">Chưa có</span></p>
+        <button class="secondary-btn" onclick="updateStreak()">Cập nhật streak</button>
+      </div>
+
+      <div class="card">
+        <h2>📊 Thống kê hôm nay</h2>
+        <div class="stats">
+          <div><h3 id="totalWorkouts">0</h3><p>Bài tập</p></div>
+          <div><h3 id="totalMinutes">0</h3><p>Phút</p></div>
+          <div><h3 id="totalCalories">0</h3><p>Calo đốt</p></div>
+        </div>
+        <p id="smartTip"></p>
+      </div>
+
+      <div class="card">
+        <h2>🎯 Mục tiêu ngày</h2>
+        <input type="number" id="goalInput" min="100" max="5000" placeholder="Nhập mục tiêu calo/ngày">
+        <button class="primary-btn" onclick="setGoal()">Lưu mục tiêu</button>
+        <p id="goalText"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🍔 Thêm món ăn (Auto calo)</h2>
+      <label>Món ăn</label>
+      <select id="foodName" onchange="autoCalo()">
+        <option value="">-- Chọn món --</option>
+        <option value="rice">Cơm trắng</option>
+        <option value="pho">Phở bò</option>
+        <option value="chicken">Ức gà</option>
+        <option value="egg">Trứng luộc</option>
+        <option value="banana">Chuối</option>
+      </select>
+      <label>Calo</label>
+      <input type="number" id="foodCalo" readonly>
+      <button class="primary-btn" onclick="addFood()">Thêm món</button>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Gợi ý bài tập</h2>
+      <select id="goalType" onchange="suggestWorkout()">
+        <option value="">-- Chọn mục tiêu --</option>
+        <option value="fat">Giảm mỡ</option>
+        <option value="muscle">Tăng cơ</option>
+        <option value="health">Sức khỏe</option>
+      </select>
+      <div id="suggestBox" style="margin-top: 15px;"></div>
+      <div id="videoBox" style="margin-top:15px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Lịch sử tập luyện</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Bài tập</th>
+            <th>Loại</th>
+            <th>Phút</th>
+            <th>Calo</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="table"></tbody>
+      </table>
+      <button class="danger-btn" onclick="clearAll()">Xóa tất cả lịch sử</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**************** KHỞI TẠO BIẾN ****************/
+let currentUser = localStorage.getItem('currentUser');
+let mode = currentUser ? 'user' : 'guest';
+let streak = currentUser ? parseInt(localStorage.getItem('streak_' + currentUser)) || 0 : 0;
+
+/**************** DỮ LIỆU ****************/
+let guestToday = JSON.parse(localStorage.getItem('guestToday')) || { minutes: 0, calories: 0, note: '' };
+let activities = currentUser ? JSON.parse(localStorage.getItem('activities_' + currentUser)) || [] : [];
+let foods = currentUser ? JSON.parse(localStorage.getItem('foods_' + currentUser)) || [] : [];
+let goal = currentUser ? +localStorage.getItem('goal_' + currentUser) || 0 : 0;
+let profile = currentUser ? JSON.parse(localStorage.getItem('profile_' + currentUser)) || {} : {};
+
+/**************** CƠ SỞ DỮ LIỆU THỨC ĂN ****************/
+const foodDB = {
+  rice: { name: 'Cơm trắng', cal: 200 },
+  pho: { name: 'Phở bò', cal: 450 },
+  chicken: { name: 'Ức gà', cal: 165 },
+  egg: { name: 'Trứng luộc', cal: 78 },
+  banana: { name: 'Chuối', cal: 105 }
+};
+
+/**************** XÁC THỰC NGƯỜI DÙNG ****************/
+function register() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  
+  if (!email || !pass) {
+    document.getElementById('authMsg').innerText = 'Vui lòng nhập đầy đủ thông tin';
+    return;
+  }
+  
+  if (!email.includes('@') || !email.includes('.')) {
+    document.getElementById('authMsg').innerText = 'Email không hợp lệ';
+    return;
+  }
+  
+  const users = JSON.parse(localStorage.getItem('users')) || {};
+  if (users[email]) {
+    document.getElementById('authMsg').innerText = 'Email đã tồn tại';
+    return;
+  }
+  
+  users[email] = { password: pass };
+  localStorage.setItem('users', JSON.stringify(users));
+  document.getElementById('authMsg').innerText = 'Đăng ký thành công!';
+  document.getElementById('authMsg').style.color = '#2ecc71';
+}
+
+function login() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const users = JSON.parse(localStorage.getItem('users')) || {};
+  
+  if (!users[email] || users[email].password !== pass) {
+    document.getElementById('authMsg').innerText = 'Email hoặc mật khẩu không đúng';
+    return;
+  }
+  
+  localStorage.setItem('currentUser', email);
+  location.reload();
+}
+
+function logout() { 
+  localStorage.removeItem('currentUser'); 
+  location.reload(); 
+}
+
+/**************** HỒ SƠ NGƯỜI DÙNG ****************/
+function saveProfile() {
+  if (!currentUser) {
+    alert('Vui lòng đăng nhập để lưu hồ sơ');
+    return;
+  }
+  
+  const age = Math.max(0, +document.getElementById('age').value || 0);
+  const weight = Math.max(0, +document.getElementById('weight').value || 0);
+  const height = Math.max(0, +document.getElementById('height').value || 0);
+  
+  if (!weight || !height) {
+    alert('Vui lòng nhập cân nặng và chiều cao');
+    return;
+  }
+  
+  const bmi = (weight / ((height / 100) ** 2)).toFixed(1);
+  let bmiCategory = '';
+  
+  if (bmi < 18.5) bmiCategory = 'Thiếu cân';
+  else if (bmi < 23) bmiCategory = 'Bình thường';
+  else if (bmi < 25) bmiCategory = 'Thừa cân';
+  else bmiCategory = 'Béo phì';
+  
+  profile = { age, weight, height, bmi, bmiCategory };
+  localStorage.setItem('profile_' + currentUser, JSON.stringify(profile));
+  document.getElementById('bmiText').innerText = `BMI: ${bmi} (${bmiCategory})`;
+  
+  updateBadge();
+}
+
+function loadProfile() {
+  if (!profile || !profile.weight) return;
+  
+  document.getElementById('age').value = profile.age || '';
+  document.getElementById('weight').value = profile.weight || '';
+  document.getElementById('height').value = profile.height || '';
+  
+  if (profile.bmi) {
+    document.getElementById('bmiText').innerText = `BMI: ${profile.bmi} (${profile.bmiCategory || ''})`;
+  }
+}
+
+/**************** XỬ LÝ GIAO DIỆN ****************/
+function init() {
+  if (mode === 'guest') {
+    document.getElementById('authBox').style.display = 'block';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'none';
+    renderGuest();
+  } else {
+    document.getElementById('authBox').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'inline-block';
+    loadProfile();
+    loadGoal();
+    updateStreakDisplay();
+    updateBadge();
+    renderUser();
+  }
+}
+
+/**************** CHẾ ĐỘ GUEST ****************/
+function renderGuest() {
+  const gridElement = document.querySelector('.grid');
+  if (!gridElement) return;
+  
+  gridElement.innerHTML = `
+    <div class='card'>
+      <h2>📝 Ghi chú hôm nay (Khách)</h2>
+      <label>Hôm nay tập gì</label>
+      <input id='gNote' value='${guestToday.note}' placeholder='Mô tả bài tập'>
+      <label>Thời gian (phút)</label>
+      <input id='gMin' type='number' min='0' value='${guestToday.minutes}'>
+      <label>Calo đốt</label>
+      <input id='gCal' type='number' min='0' value='${guestToday.calories}'>
+      <button class='primary-btn' onclick='saveGuest()'>Lưu ghi chú</button>
+      <p style='color:#e67e22; margin-top:10px;'>
+        * Chế độ khách: Dữ liệu chỉ lưu trên máy tính này
+      </p>
+    </div>`;
+}
+
+function saveGuest() {
+  const minutes = Math.max(0, +document.getElementById('gMin').value || 0);
+  const calories = Math.max(0, +document.getElementById('gCal').value || 0);
+  const note = document.getElementById('gNote').value;
+  
+  guestToday = { note, minutes, calories };
+  localStorage.setItem('guestToday', JSON.stringify(guestToday));
+  alert('Đã lưu ghi chú cho hôm nay!');
+}
+
+/**************** CHẾ ĐỘ USER ****************/
+function addActivity() {
+  const exercise = document.getElementById('exercise').value.trim();
+  const duration = Math.max(1, +document.getElementById('duration').value || 0);
+  const type = document.getElementById('type').value;
+  
+  if (!exercise) {
+    alert('Vui lòng nhập tên bài tập');
+    return;
+  }
+  
+  if (duration <= 0) {
+    alert('Vui lòng nhập thời gian hợp lệ');
+    return;
+  }
+  
+  const calories = estimateCalories(duration, type);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('vi-VN');
+  
+  activities.push({
+    ex: exercise,
+    type: type,
+    d: duration,
+    c: calories,
+    date: dateStr
+  });
+  
+  document.getElementById('exercise').value = '';
+  document.getElementById('duration').value = '';
+  document.getElementById('calories').value = '';
+  
+  saveUser();
+  updateStreak();
+}
+
+function estimateCalories(minutes, type) {
+  let rate = 5;
+  if (type === 'Cardio') rate = 8;
+  if (type === 'Strength') rate = 6;
+  if (type === 'Yoga') rate = 3;
+  return Math.round(minutes * rate);
+}
+
+function previewCalories() {
+  const duration = +document.getElementById('duration').value || 0;
+  const type = document.getElementById('type').value;
+  
+  if (duration > 0) {
+    document.getElementById('calories').value = estimateCalories(duration, type);
+  } else {
+    document.getElementById('calories').value = '';
+  }
+}
+
+function saveUser() {
+  if (!currentUser) return;
+  
+  localStorage.setItem('activities_' + currentUser, JSON.stringify(activities));
+  localStorage.setItem('foods_' + currentUser, JSON.stringify(foods));
+  renderUser();
+}
+
+function renderUser() {
+  const table = document.getElementById('table');
+  if (!table) return;
+  
+  table.innerHTML = '';
+  let totalCaloriesBurned = 0;
+  let totalMinutes = 0;
+  
+  activities.forEach((activity, index) => {
+    totalCaloriesBurned += activity.c;
+    totalMinutes += activity.d;
+    
+    table.innerHTML += `
+      <tr>
+        <td>${activity.ex}</td>
+        <td>${activity.type}</td>
+        <td>${activity.d}</td>
+        <td>${activity.c}</td>
+        <td>
+          <button class="danger-btn" style="padding: 5px 10px;" onclick="deleteActivity(${index})">Xóa</button>
+        </td>
+      </tr>`;
+  });
+  
+  const totalCaloriesEaten = foods.reduce((sum, food) => sum + food.cal, 0);
+  const netCalories = totalCaloriesBurned - totalCaloriesEaten;
+  
+  document.getElementById('totalCalories').innerText = netCalories;
+  document.getElementById('totalMinutes').innerText = totalMinutes;
+  document.getElementById('totalWorkouts').innerText = activities.length;
+  
+  if (goal > 0) {
+    const remaining = Math.max(goal - netCalories, 0);
+    document.getElementById('smartTip').innerText = 
+      remaining === 0 ? 
+      '🎉 Chúc mừng! Bạn đã đạt mục tiêu hôm nay!' :
+      `🔥 Còn ${remaining} calo để đạt mục tiêu`;
+  } else {
+    document.getElementById('smartTip').innerText = 'Hãy đặt mục tiêu để nhận gợi ý!';
+  }
+}
+
+function deleteActivity(index) {
+  if (confirm('Bạn có chắc muốn xóa hoạt động này?')) {
+    activities.splice(index, 1);
+    saveUser();
+  }
+}
+
+/**************** QUẢN LÝ THỨC ĂN ****************/
+function autoCalo() {
+  const foodKey = document.getElementById('foodName').value;
+  const food = foodDB[foodKey];
+  document.getElementById('foodCalo').value = food ? food.cal : '';
+}
+
+function addFood() {
+  const foodKey = document.getElementById('foodName').value;
+  
+  if (!foodKey) {
+    alert('Vui lòng chọn món ăn');
+    return;
+  }
+  
+  const food = foodDB[foodKey];
+  foods.push({ name: food.name, cal: food.cal });
+  
+  document.getElementById('foodName').value = '';
+  document.getElementById('foodCalo').value = '';
+  
+  saveUser();
+}
+
+/**************** MỤC TIÊU ****************/
+function setGoal() {
+  const goalValue = Math.max(100, +document.getElementById('goalInput').value || 0);
+  
+  if (goalValue > 5000) {
+    alert('Mục tiêu không được vượt quá 5000 calo');
+    return;
+  }
+  
+  goal = goalValue;
+  localStorage.setItem('goal_' + currentUser, goal);
+  
+  document.getElementById('goalText').innerText = `Mục tiêu hiện tại: ${goal} calo/ngày`;
+  document.getElementById('goalInput').value = '';
+  
+  renderUser();
+}
+
+function loadGoal() {
+  if (goal > 0) {
+    document.getElementById('goalText').innerText = `Mục tiêu hiện tại: ${goal} calo/ngày`;
+  }
+}
+
+/**************** STREAK & HUY HIỆU ****************/
+function updateStreak() {
+  if (!currentUser) return;
+  
+  const today = new Date().toDateString();
+  const lastDate = localStorage.getItem('lastDate_' + currentUser);
+  
+  if (lastDate === today) return;
+  
+  if (activities.length > 0) {
+    if (!lastDate) {
+      streak = 1;
+    } else {
+      const last = new Date(lastDate);
+      const now = new Date();
+      const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        streak++;
+      } else if (diffDays > 1) {
+        streak = 1;
+      }
+    }
+    
+    localStorage.setItem('lastDate_' + currentUser, today);
+    localStorage.setItem('streak_' + currentUser, streak);
+    updateStreakDisplay();
+    updateBadge();
+  }
+}
+
+function updateStreakDisplay() {
+  document.getElementById('streak').innerText = streak;
+}
+
+function updateBadge() {
+  const badgeElement = document.getElementById('badge');
+  if (!badgeElement) return;
+  
+  let badge = 'Chưa có';
+  
+  if (streak >= 30) badge = '🏆 Huyền thoại (30+ ngày)';
+  else if (streak >= 14) badge = '⭐ Siêu cấp (14+ ngày)';
+  else if (streak >= 7) badge = '🔥 Nhiệt huyết (7+ ngày)';
+  else if (streak >= 3) badge = '🌱 Mầm non (3+ ngày)';
+  
+  badgeElement.innerText = badge;
+}
+
+/**************** GỢI Ý BÀI TẬP ****************/
+function suggestWorkout() {
+  const goalType = document.getElementById('goalType').value;
+  const suggestBox = document.getElementById('suggestBox');
+  const videoBox = document.getElementById('videoBox');
+  
+  if (!goalType) {
+    suggestBox.innerHTML = '<p>Vui lòng chọn mục tiêu</p>';
+    videoBox.innerHTML = '';
+    return;
+  }
+  
+  if (goal <= 0) {
+    suggestBox.innerHTML = '<p>Hãy đặt mục tiêu calo trước.</p>';
+    videoBox.innerHTML = '';
+    return;
+  }
+  
+  const remaining = Math.max(goal - activities.reduce((sum, a) => sum + a.c, 0), 0);
+  
+  let suggestions = [];
+  let videoId = '';
+  
+  switch(goalType) {
+    case 'fat':
+      suggestions = [
+        `Chạy bộ: ${Math.round(remaining * 0.6)} calo (${Math.round(remaining * 0.6 / 8)} phút)`,
+        `Nhảy dây: ${Math.round(remaining * 0.4)} calo (${Math.round(remaining * 0.4 / 10)} phút)`
+      ];
+      videoId = 'ml6cT4AZdqI';
+      break;
+      
+    case 'muscle':
+      suggestions = [
+        `Squat: ${Math.round(remaining * 0.4)} calo (3 hiệp x 15 lần)`,
+        `Hít đất: ${Math.round(remaining * 0.3)} calo (3 hiệp x 10 lần)`,
+        `Tập tạ: ${Math.round(remaining * 0.3)} calo`
+      ];
+      videoId = 'aclHkVaku9U';
+      break;
+      
+    case 'health':
+      suggestions = [
+        `Đi bộ nhanh: ${Math.round(remaining * 0.5)} calo (${Math.round(remaining * 0.5 / 5)} phút)`,
+        `Yoga: ${Math.round(remaining * 0.3)} calo (30 phút)`,
+        `Giãn cơ: ${Math.round(remaining * 0.2)} calo (15 phút)`
+      ];
+      videoId = 'v7AYKMP6rOE';
+      break;
+  }
+  
+  let html = '<ul>';
+  suggestions.forEach(s => {
+    html += `<li style="margin-bottom: 8px;">${s}</li>`;
+  });
+  html += '</ul>';
+  
+  suggestBox.innerHTML = html;
+  videoBox.innerHTML = `
+    <iframe 
+      width="100%" 
+      height="250" 
+      src="https://www.youtube.com/embed/${videoId}" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+      allowfullscreen>
+    </iframe>`;
+}
+
+/**************** XÓA DỮ LIỆU ****************/
+function clearAll() {
+  if (!confirm('Bạn có chắc muốn xóa TOÀN BỘ lịch sử tập luyện và thức ăn?')) {
+    return;
+  }
+  
+  activities = [];
+  foods = [];
+  streak = 0;
+  
+  if (currentUser) {
+    localStorage.setItem('activities_' + currentUser, JSON.stringify(activities));
+    localStorage.setItem('foods_' + currentUser, JSON.stringify(foods));
+    localStorage.setItem('streak_' + currentUser, streak);
+  }
+  
+  updateStreakDisplay();
+  updateBadge();
+  renderUser();
+}
+
+/**************** KHỞI CHẠY ỨNG DỤNG ****************/
+document.addEventListener('DOMContentLoaded', function() {
+  init();
+});
+</script>
+</body>
+</html>
